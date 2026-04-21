@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import importlib.metadata
+import inspect
 import locale
 import os
 import signal
@@ -447,12 +448,33 @@ class App:
         the app will exit.
         """
 
+        for window in list(self.windows):
+            if window == self.main_window:
+                continue
+
+            handler = getattr(window.on_close, "_raw", None)
+
+            if handler is None:
+                continue
+
+            if inspect.iscoroutinefunction(handler):
+                continue
+
+            try:
+                result = handler(window)
+            except Exception:
+                continue
+
+            if inspect.isgenerator(result):
+                continue
+
+            if result is False:
+                return
+
         def cleanup(app, should_exit):
             if should_exit:
                 app.exit()
 
-        # Wrap on_exit to ensure that an async handler is turned into a task,
-        # then immediately invoke.
         wrapped_handler(self, self.on_exit, cleanup=cleanup)()
 
     def exit(self) -> None:
