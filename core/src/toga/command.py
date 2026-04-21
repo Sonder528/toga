@@ -198,6 +198,13 @@ class Command:
     [`toga.App.request_exit()`][toga.App.request_exit]
     as the default action.
     """
+    CLOSE: str = "close_current_window"
+    """
+    An identifier for the standard "Close" menu item. This command may be installed by
+    default, depending on platform requirements. Uses
+    [`toga.App.close_current_window()`][toga.App.close_current_window]
+    as the default action.
+    """
     NEW: str = "documents.new"
     """
     An identifier for the standard "New" menu item. This constant will be used for

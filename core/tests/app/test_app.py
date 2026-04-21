@@ -1013,6 +1013,93 @@ def test_request_exit_rejected_by_other_window(app):
     assert_action_not_performed(app, "exit")
 
 
+def test_close_current_window_regular_window(app):
+    """close_current_window() closes the currently active regular window."""
+    window = toga.Window()
+    window.content = toga.Box()
+    window.show()
+
+    app.current_window = window
+
+    on_close_handler = Mock(return_value=True)
+    window.on_close = on_close_handler
+
+    app.close_current_window()
+
+    on_close_handler.assert_called_once_with(window)
+    assert window.closed
+    assert window not in app.windows
+    assert_action_performed(window, "close")
+
+
+def test_close_current_window_regular_window_rejected(app):
+    """close_current_window() respects on_close handler returning False for regular window."""
+    window = toga.Window()
+    window.content = toga.Box()
+    window.show()
+
+    app.current_window = window
+
+    on_close_handler = Mock(return_value=False)
+    window.on_close = on_close_handler
+
+    app.close_current_window()
+
+    on_close_handler.assert_called_once_with(window)
+    assert not window.closed
+    assert window in app.windows
+    assert_action_not_performed(window, "close")
+
+
+def test_close_current_window_main_window(app):
+    """close_current_window() triggers exit logic when closing main window."""
+    main_window = app.main_window
+
+    app.current_window = main_window
+
+    on_close_handler = Mock(return_value=True)
+    main_window.on_close = on_close_handler
+
+    on_exit_handler = Mock(return_value=True)
+    app.on_exit = on_exit_handler
+
+    app.close_current_window()
+
+    on_close_handler.assert_called_once_with(main_window)
+    on_exit_handler.assert_called_once_with(app)
+    assert_action_performed(app, "exit")
+
+
+def test_close_current_window_main_window_rejected(app):
+    """close_current_window() respects main window's on_close handler returning False."""
+    main_window = app.main_window
+
+    app.current_window = main_window
+
+    on_close_handler = Mock(return_value=False)
+    main_window.on_close = on_close_handler
+
+    on_exit_handler = Mock(return_value=True)
+    app.on_exit = on_exit_handler
+
+    app.close_current_window()
+
+    on_close_handler.assert_called_once_with(main_window)
+    on_exit_handler.assert_not_called()
+    assert_action_not_performed(app, "exit")
+
+
+def test_close_current_window_no_current_window(app):
+    """close_current_window() is a no-op when there is no current window."""
+    on_exit_handler = Mock(return_value=True)
+    app.on_exit = on_exit_handler
+
+    app.close_current_window()
+
+    on_exit_handler.assert_not_called()
+    assert_action_not_performed(app, "exit")
+
+
 def test_no_exit_last_window_close(app):
     """Windows can be created and closed without closing the app."""
     # App has 1 window initially
