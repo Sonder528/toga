@@ -959,6 +959,60 @@ def test_exit_rejected_handler(app):
     on_exit_handler.assert_called_once_with(app)
 
 
+def test_request_exit_checks_other_window_on_close(app):
+    """Requesting exit should check on_close handlers of all non-main windows."""
+    window1 = toga.Window()
+    window1.content = toga.Box()
+    window1.show()
+
+    window2 = toga.Window()
+    window2.content = toga.Box()
+    window2.show()
+
+    on_close_handler1 = Mock(return_value=True)
+    window1.on_close = on_close_handler1
+
+    on_close_handler2 = Mock(return_value=True)
+    window2.on_close = on_close_handler2
+
+    on_exit_handler = Mock(return_value=True)
+    app.on_exit = on_exit_handler
+
+    app.request_exit()
+
+    on_close_handler1.assert_called_once_with(window1)
+    on_close_handler2.assert_called_once_with(window2)
+    on_exit_handler.assert_called_once_with(app)
+    assert_action_performed(app, "exit")
+
+
+def test_request_exit_rejected_by_other_window(app):
+    """If any non-main window's on_close returns False, exit should be rejected."""
+    window1 = toga.Window()
+    window1.content = toga.Box()
+    window1.show()
+
+    window2 = toga.Window()
+    window2.content = toga.Box()
+    window2.show()
+
+    on_close_handler1 = Mock(return_value=True)
+    window1.on_close = on_close_handler1
+
+    on_close_handler2 = Mock(return_value=False)
+    window2.on_close = on_close_handler2
+
+    on_exit_handler = Mock(return_value=True)
+    app.on_exit = on_exit_handler
+
+    app.request_exit()
+
+    on_close_handler1.assert_called_once_with(window1)
+    on_close_handler2.assert_called_once_with(window2)
+    on_exit_handler.assert_not_called()
+    assert_action_not_performed(app, "exit")
+
+
 def test_no_exit_last_window_close(app):
     """Windows can be created and closed without closing the app."""
     # App has 1 window initially
