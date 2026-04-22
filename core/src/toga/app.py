@@ -867,6 +867,24 @@ class App:
         """Set a window into current active focus."""
         self._impl.set_current_window(window)
 
+    def close_current_window(self) -> None:
+        """Close the currently active window.
+
+        This method is invoked as a handler by the "Close" default menu item.
+        It will trigger the `on_close` handler of the currently active window,
+        following the same behavior as if the user clicked the window's close button.
+
+        - For a regular window: If the `on_close` handler allows closing (returns True
+          or is None), the window will be closed.
+        - For the main window: If the `on_close` handler allows closing, it will trigger
+          the app exit logic (`request_exit()`).
+
+        If there is no currently active window, this is a no-op.
+        """
+        window = self.current_window
+        if window is not None:
+            window.on_close()
+
     ######################################################################
     # Presentation mode controls
     ######################################################################
