@@ -1100,6 +1100,85 @@ def test_close_current_window_no_current_window(app):
     assert_action_not_performed(app, "exit")
 
 
+def test_close_command_is_standard_command(app):
+    """Command.CLOSE should be a standard command installed by default."""
+    assert toga.Command.CLOSE in app.commands
+
+    close_cmd = app.commands[toga.Command.CLOSE]
+    assert close_cmd.id == toga.Command.CLOSE
+    assert close_cmd.text == "Close"
+
+
+def test_close_command_triggers_close_current_window(app):
+    """Activating the Close command should call close_current_window()."""
+    window = toga.Window()
+    window.content = toga.Box()
+    window.show()
+
+    app.current_window = window
+
+    on_close_handler = Mock(return_value=True)
+    window.on_close = on_close_handler
+
+    close_cmd = app.commands[toga.Command.CLOSE]
+    close_cmd.action()
+
+    on_close_handler.assert_called_once_with(window)
+    assert window.closed
+    assert window not in app.windows
+    assert_action_performed(window, "close")
+
+
+def test_close_command_respects_on_close_handler(app):
+    """Close command should respect the on_close handler returning False."""
+    window = toga.Window()
+    window.content = toga.Box()
+    window.show()
+
+    app.current_window = window
+
+    on_close_handler = Mock(return_value=False)
+    window.on_close = on_close_handler
+
+    close_cmd = app.commands[toga.Command.CLOSE]
+    close_cmd.action()
+
+    on_close_handler.assert_called_once_with(window)
+    assert not window.closed
+    assert window in app.windows
+    assert_action_not_performed(window, "close")
+
+
+def test_close_command_only_affects_current_window(app):
+    """Close command should only affect the currently active window."""
+    window1 = toga.Window()
+    window1.content = toga.Box()
+    window1.show()
+
+    window2 = toga.Window()
+    window2.content = toga.Box()
+    window2.show()
+
+    app.current_window = window1
+
+    on_close_handler1 = Mock(return_value=True)
+    window1.on_close = on_close_handler1
+
+    on_close_handler2 = Mock(return_value=True)
+    window2.on_close = on_close_handler2
+
+    close_cmd = app.commands[toga.Command.CLOSE]
+    close_cmd.action()
+
+    on_close_handler1.assert_called_once_with(window1)
+    assert window1.closed
+    assert window1 not in app.windows
+
+    on_close_handler2.assert_not_called()
+    assert not window2.closed
+    assert window2 in app.windows
+
+
 def test_no_exit_last_window_close(app):
     """Windows can be created and closed without closing the app."""
     # App has 1 window initially

@@ -61,6 +61,14 @@ class Command(LoggedObject):
                 "section": 10,
                 "order": 2,
             }
+        elif id == StandardCommand.CLOSE:
+            return {
+                "text": "Close",
+                "shortcut": Key.MOD_1 + "w",
+                "group": Group.FILE,
+                "section": 50,
+                "order": 1,
+            }
         # ---- Help menu ----------------------------------
         elif id == StandardCommand.ABOUT:
             return {

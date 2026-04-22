@@ -582,6 +582,7 @@ class App:
             Command.ABOUT,
             Command.EXIT,
             Command.VISIT_HOMEPAGE,
+            Command.CLOSE,
         ]:
             self.commands.add(Command.standard(self, cmd_id))
 
