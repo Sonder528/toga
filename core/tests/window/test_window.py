@@ -755,6 +755,95 @@ def test_close_rejected_handler(window, app):
     on_close_handler.assert_called_once_with(window)
 
 
+def test_close_is_isolated_to_window(app):
+    """Closing one window does not affect other windows' on_close handlers."""
+    window1 = toga.Window()
+    window1.content = toga.Box()
+    window1.show()
+
+    window2 = toga.Window()
+    window2.content = toga.Box()
+    window2.show()
+
+    on_close_handler1 = Mock(return_value=True)
+    window1.on_close = on_close_handler1
+
+    on_close_handler2 = Mock(return_value=True)
+    window2.on_close = on_close_handler2
+
+    window1._impl.simulate_close()
+
+    assert window1.closed
+    assert window1 not in app.windows
+    on_close_handler1.assert_called_once_with(window1)
+
+    assert not window2.closed
+    assert window2 in app.windows
+    on_close_handler2.assert_not_called()
+
+
+def test_close_is_isolated_when_rejected(app):
+    """When one window's close is rejected, other windows are not affected."""
+    window1 = toga.Window()
+    window1.content = toga.Box()
+    window1.show()
+
+    window2 = toga.Window()
+    window2.content = toga.Box()
+    window2.show()
+
+    on_close_handler1 = Mock(return_value=False)
+    window1.on_close = on_close_handler1
+
+    on_close_handler2 = Mock(return_value=True)
+    window2.on_close = on_close_handler2
+
+    window1._impl.simulate_close()
+
+    assert not window1.closed
+    assert window1 in app.windows
+    on_close_handler1.assert_called_once_with(window1)
+
+    assert not window2.closed
+    assert window2 in app.windows
+    on_close_handler2.assert_not_called()
+
+
+def test_main_window_close_full_chain(app):
+    """Main window close goes through on_close handler, then on_exit handler."""
+    main_window = app.main_window
+
+    on_close_handler = Mock(return_value=True)
+    main_window.on_close = on_close_handler
+
+    on_exit_handler = Mock(return_value=True)
+    app.on_exit = on_exit_handler
+
+    main_window._impl.simulate_close()
+
+    on_close_handler.assert_called_once_with(main_window)
+    on_exit_handler.assert_called_once_with(app)
+    assert_action_performed(app, "exit")
+
+
+def test_main_window_close_rejected_by_on_close(app):
+    """Main window close can be rejected by its own on_close handler."""
+    main_window = app.main_window
+
+    on_close_handler = Mock(return_value=False)
+    main_window.on_close = on_close_handler
+
+    on_exit_handler = Mock(return_value=True)
+    app.on_exit = on_exit_handler
+
+    main_window._impl.simulate_close()
+
+    on_close_handler.assert_called_once_with(main_window)
+    on_exit_handler.assert_not_called()
+    assert_action_not_performed(app, "exit")
+    assert not main_window.closed
+
+
 def test_focus_events(app):
     """The window can trigger on_gain_focus() and on_lose_focus()
     event handlers, when the window gains or loses input focus."""
